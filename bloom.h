@@ -67,6 +67,7 @@ struct bloom
  *
  */
 int bloom_init(struct bloom * bloom, int entries, double error);
+int bloom_set(struct bloom * bloom, int entries, double error, unsigned char * bf_set);
 
 
 /** ***************************************************************************

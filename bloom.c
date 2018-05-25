@@ -59,6 +59,7 @@ static int bloom_check_add(struct bloom * bloom,
   register unsigned int x;
   register unsigned int i;
 
+  //printf("get here with bloom->hashes: %d %x %x %d \n", bloom->hashes, a, b, bloom->bits);
   for (i = 0; i < bloom->hashes; i++) {
     x = (a + i*b) % bloom->bits;
     if (test_bit_set_bit(bloom->bf, x, add)) {
@@ -80,14 +81,13 @@ int bloom_init_size(struct bloom * bloom, int entries, double error,
   return bloom_init(bloom, entries, error);
 }
 
-
-int bloom_init(struct bloom * bloom, int entries, double error)
+int bloom_set(struct bloom * bloom, int entries, double error, unsigned char * bf_set)
 {
   bloom->ready = 0;
 
-  if (entries < 1000 || error == 0) {
+  /*if (entries < 1000 || error == 0) {
     return 1;
-  }
+  }*/
 
   bloom->entries = entries;
   bloom->error = error;
@@ -95,6 +95,40 @@ int bloom_init(struct bloom * bloom, int entries, double error)
   double num = log(bloom->error);
   double denom = 0.480453013918201; // ln(2)^2
   bloom->bpe = -(num / denom);
+  printf("init with num: %f, bpe: %f\n", num, bloom->bpe);
+
+  double dentries = (double)entries;
+  bloom->bits = (int)(dentries * bloom->bpe);
+
+  if (bloom->bits % 8) {
+    bloom->bytes = (bloom->bits / 8) + 1;
+  } else {
+    bloom->bytes = bloom->bits / 8;
+  }
+
+  bloom->hashes = (int)ceil(0.693147180559945 * bloom->bpe);  // ln(2)
+
+  bloom->bf = bf_set;
+
+  bloom->ready = 1;
+  return 0;
+}
+
+int bloom_init(struct bloom * bloom, int entries, double error)
+{
+  bloom->ready = 0;
+
+  /*if (entries < 1000 || error == 0) {
+    return 1;
+  }*/
+
+  bloom->entries = entries;
+  bloom->error = error;
+
+  double num = log(bloom->error);
+  double denom = 0.480453013918201; // ln(2)^2
+  bloom->bpe = -(num / denom);
+  printf("init with num: %f, bpe: %f\n", num, bloom->bpe);
 
   double dentries = (double)entries;
   bloom->bits = (int)(dentries * bloom->bpe);
